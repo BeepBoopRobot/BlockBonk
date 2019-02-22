@@ -12,6 +12,11 @@ import javafx.stage.StageStyle;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.text.DecimalFormat;
+
+//ToDo: Sort out collision Logic
+//ToDo: Implement collision Calculations
+
 
 public class Main {
     private static int accuracy;
@@ -47,6 +52,7 @@ public class Main {
     }
 
     private static int bonkNo = 0;
+    private static DecimalFormat df;
 
     private static void launch() {
         Stage stage = new Stage();
@@ -63,6 +69,8 @@ public class Main {
         scene.setOnKeyPressed(ke -> {
             if (ke.getCode().equals(KeyCode.ESCAPE)) System.exit(0);
         });
+
+        df = new DecimalFormat("#.00");
 
         Canvas blocksCanvas = new Canvas();
         blocksCanvas.setWidth(500);
@@ -90,13 +98,14 @@ public class Main {
 
             @Override
             public void handle(long now) {
-                //if(now - last >= 16_000_000) {
+                if(now - last >= 16_000_000) {
                     //clear(blocks,blocksCanvas.getWidth(),blocksCanvas.getHeight());
                     //clear(numbers,numbersCanvas.getWidth(),numbersCanvas.getHeight());
                     update(leftBlock,rightBlock);
                     drawBlocks(blocks,leftBlock,rightBlock);
                     drawNumbers(numbers);
-                //}
+                    last = now;
+                }
             }
         };
         at.start();
@@ -104,22 +113,26 @@ public class Main {
     }
 
     static void update(Block a, Block b) {
-        a.update();
-        b.update();
-        if(b.getD() - a.getD() <= 0) {
-            bonk(a,b);
-        }
-        if(a.getD() - a.getBlockWidth() <= 0) {
-            wallBonk(a);
+        for(int i = 0; i< 1000; i++) {
+            a.update();
+            b.update();
+            if (b.getD() - a.getD() <= 0) {
+                bonk(a, b);
+            }
+            if (a.getD() - a.getBlockWidth() <= 0) {
+                wallBonk(a);
+            }
         }
     }
 
     static void bonk(Block a, Block b) {
+            collisions++;
             a.newSpeed(b.oldSpeed());
             b.newSpeed(0);
     }
 
     static void wallBonk(Block b) {
+        collisions++;
         b.newSpeed(-b.oldSpeed());
     }
 
@@ -142,9 +155,10 @@ public class Main {
     }
 
     static void drawNumbers(GraphicsContext gc) { //Text maxwidth must be 250, text height is 50
+
         gc.clearRect(0,0,500,150);
-        gc.strokeText(String.valueOf(leftBlock.getD()),0,50);
-        gc.strokeText(String.valueOf(rightBlock.getD()),250,50);
+        gc.strokeText(df.format(leftBlock.getD()),0,50,250);
+        gc.strokeText(df.format(rightBlock.getD()),250,50,250);
         gc.strokeText(String.valueOf(collisions),0,100);
     }
 
