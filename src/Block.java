@@ -19,7 +19,7 @@ public class Block {
     }
 
     void update() {
-        pos += speed/1000;
+        pos += speed/10000;
     }
 
     public long getMass() {

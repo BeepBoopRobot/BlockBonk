@@ -98,7 +98,7 @@ public class Main {
 
         leftBlock = new Block(1, 0, 60, true);
 
-        rightBlock = new Block(1 * (long) Math.pow(10, accuracy-1), -0.5, 200, false);
+        rightBlock = new Block(1 * (long) Math.pow(10, accuracy), -0.25, 200, false);
 
         AnimationTimer at = new AnimationTimer() {
             private long last = 0;
@@ -134,13 +134,13 @@ public class Main {
 
     static void update(Block a, Block b) {
         if(a.oldSpeed() >= 0 && a.oldSpeed() < b.oldSpeed()) closeTime();
-        for(int i = 0; i< 1000; i++) {
+        for(int i = 0; i< 10000; i++) {
             a.update();
             b.update();
-            if ((a.getPos() + 0.5 > b.getPos() - 0.5 && a.getPos()+0.5<b.getPos()+0.5)||(a.getPos()-0.5<b.getPos()+0.5&&a.getPos()+0.5>b.getPos()-0.5)) {
+            if ((a.getD() + 0.5 > b.getD() - 0.5 && a.getD()+0.5<b.getPos()+0.5)||(a.getD()-0.5<b.getD()+0.5&&a.getD()+0.5>b.getD()-0.5)) {
                 bonk(a, b);
             }
-            if ((100.05>a.getPos() -0.5 && 100+0.5<a.getPos()+0.6)||(100-0.5<b.getPos()+0.5&&100-0.5>b.getPos()-0.5)) {
+            if ((100.05>a.getPos() -0.5 && 100+0.5<a.getPos()+0.5)||(100-0.5<b.getPos()+0.5&&100-0.5>b.getPos()-0.5)) {
                 wallBonk(a);
             }
         }
