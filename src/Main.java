@@ -1,5 +1,6 @@
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -11,6 +12,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 
@@ -28,12 +30,12 @@ public class Main {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
         boolean done = false, broke = false;
-        /*while (!done) {
+        while (!done) {
             try {
                 broke = false;
                 System.out.println("How many decimal places do you want: ");
                 try {
-                    int f = Integer.valueOf(br.readLine());
+                    accuracy = Integer.valueOf(br.readLine());
                 } catch (NumberFormatException n) {
                     broke = true;
                     System.out.println("Error, input a number");
@@ -45,7 +47,7 @@ public class Main {
             if (!broke) {
                 done = true;
             }
-        }*/
+        }
 
         new JFXPanel();
         Platform.runLater(Main::launch);
@@ -53,6 +55,11 @@ public class Main {
 
     private static int bonkNo = 0;
     private static DecimalFormat df;
+
+    private static void close() {
+        System.out.println("No. of collisions: " + collisions);
+        System.exit(0);
+    }
 
     private static void launch() {
         Stage stage = new Stage();
@@ -67,10 +74,10 @@ public class Main {
         stage.setScene(scene);
 
         scene.setOnKeyPressed(ke -> {
-            if (ke.getCode().equals(KeyCode.ESCAPE)) System.exit(0);
+            if (ke.getCode().equals(KeyCode.ESCAPE)) close();
         });
 
-        df = new DecimalFormat("#.00");
+        df = new DecimalFormat("#.00000");
 
         Canvas blocksCanvas = new Canvas();
         blocksCanvas.setWidth(500);
@@ -89,37 +96,51 @@ public class Main {
         numbers.setLineWidth(2);
 
 
-        leftBlock = new Block(10, 0, 60, true);
+        leftBlock = new Block(1, 0, 60, true);
 
-        rightBlock = new Block(10 * (long) Math.pow(10, accuracy), -0.5, 200, false);
+        rightBlock = new Block(1 * (long) Math.pow(10, accuracy-1), -0.5, 200, false);
 
         AnimationTimer at = new AnimationTimer() {
             private long last = 0;
 
             @Override
             public void handle(long now) {
-                if(now - last >= 16_000_000) {
-                    //clear(blocks,blocksCanvas.getWidth(),blocksCanvas.getHeight());
-                    //clear(numbers,numbersCanvas.getWidth(),numbersCanvas.getHeight());
+                //if(now - last >= 16_000_000) {
                     update(leftBlock,rightBlock);
                     drawBlocks(blocks,leftBlock,rightBlock);
                     drawNumbers(numbers);
-                    last = now;
-                }
+                  //  last = now;
+                //}
             }
         };
         at.start();
 
     }
 
+    static void closeTime() {
+        Task<Void> ending = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    Thread.sleep(3000);
+                } catch(InterruptedException ignored){
+                }
+                return null;
+            }
+        };
+        ending.setOnSucceeded(event -> close());
+        new Thread(ending).start();
+    }
+
     static void update(Block a, Block b) {
+        if(a.oldSpeed() >= 0 && a.oldSpeed() < b.oldSpeed()) closeTime();
         for(int i = 0; i< 1000; i++) {
             a.update();
             b.update();
-            if (b.getD() - a.getD() <= 0) {
+            if ((a.getPos() + 0.5 > b.getPos() - 0.5 && a.getPos()+0.5<b.getPos()+0.5)||(a.getPos()-0.5<b.getPos()+0.5&&a.getPos()+0.5>b.getPos()-0.5)) {
                 bonk(a, b);
             }
-            if (a.getD() - a.getBlockWidth() <= 0) {
+            if ((100.05>a.getPos() -0.5 && 100+0.5<a.getPos()+0.6)||(100-0.5<b.getPos()+0.5&&100-0.5>b.getPos()-0.5)) {
                 wallBonk(a);
             }
         }
@@ -127,8 +148,13 @@ public class Main {
 
     static void bonk(Block a, Block b) {
             collisions++;
-            a.newSpeed(b.oldSpeed());
-            b.newSpeed(0);
+            double u1 = a.oldSpeed();
+            double u2 = b.oldSpeed();
+            double m1 = a.getMass();
+            double m2 = b.getMass();
+
+            a.newSpeed(u1*((m1-m2)/(m1+m2)) + u2 * (2d*m2/(m1+m2)));
+            b.newSpeed(u1*(2d*m1/(m1+m2))-u2*((m1-m2)/(m1+m2)));
     }
 
     static void wallBonk(Block b) {
@@ -143,13 +169,12 @@ public class Main {
 
         // Left Block
         double leftBlockWidth = left.getBlockWidth();
-        gc.fillRect(100 + left.getPos(),350-leftBlockWidth,leftBlockWidth,leftBlockWidth);
-
-        gc.strokeLine(100,200,100+ left.getD(),200);
+        gc.fillRect(left.getPos(),350-leftBlockWidth,leftBlockWidth,leftBlockWidth);
+        gc.strokeLine(100,200,100 + left.getD(),200);
 
         // Right Block
         double rightBlockWidth = right.getBlockWidth();
-        gc.fillRect(100+right.getPos(),350-rightBlockWidth,rightBlockWidth,rightBlockWidth);
+        gc.fillRect(right.getPos(),350-rightBlockWidth,rightBlockWidth,rightBlockWidth);
 
         gc.strokeLine(100,250,right.getD()+100,250);
     }
@@ -157,12 +182,8 @@ public class Main {
     static void drawNumbers(GraphicsContext gc) { //Text maxwidth must be 250, text height is 50
 
         gc.clearRect(0,0,500,150);
-        gc.strokeText(df.format(leftBlock.getD()),0,50,250);
-        gc.strokeText(df.format(rightBlock.getD()),250,50,250);
+        gc.strokeText(df.format(leftBlock.oldSpeed()),0,50,250);
+        gc.strokeText(df.format(rightBlock.oldSpeed()),250,50,250);
         gc.strokeText(String.valueOf(collisions),0,100);
-    }
-
-    static void clear(GraphicsContext gc, double width, double height) {
-        gc.clearRect(0,0,width,height);
     }
 }

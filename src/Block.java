@@ -44,6 +44,6 @@ public class Block {
     }
 
     double getPos() {
-        return pos;
+        return pos + 100;
     }
 }
